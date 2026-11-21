@@ -1,0 +1,1 @@
+INSERT OR IGNORE INTO datasets VALUES('demo','Datos sintéticos de demostración','Obra Clara','local://fixtures','2022-01-01','2026-12-31','manual','synthetic','No representa datos oficiales','2026-11-20T00:00:00Z');

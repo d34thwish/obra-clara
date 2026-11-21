@@ -1,0 +1,11 @@
+{
+  "name": "@obra-clara/modules",
+  "type": "module",
+  "exports": "./src/index.ts",
+  "scripts": {
+    "typecheck": "tsc --noEmit -p ../../tsconfig.json"
+  },
+  "dependencies": {
+    "@obra-clara/core": "workspace:*"
+  }
+}

@@ -1,0 +1,39 @@
+{
+  "name": "obra-clara",
+  "private": true,
+  "version": "0.1.0",
+  "packageManager": "pnpm@11.28.9",
+  "scripts": {
+    "dev": "pnpm --filter @obra-clara/web dev",
+    "build": "pnpm --filter @obra-clara/web build",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "pnpm -r typecheck",
+    "test": "vitest run",
+    "test:integration": "vitest run tests/integration",
+    "test:e2e": "playwright test",
+    "db:migrate": "wrangler d1 migrations apply obra-clara --local --config apps/web/wrangler.jsonc",
+    "db:seed": "wrangler d1 execute obra-clara --local --config apps/web/wrangler.jsonc --file fixtures/demo.sql",
+    "data:sync": "tsx data-pipeline/scripts/sync.ts",
+    "data:validate": "tsx data-pipeline/scripts/validate.ts",
+    "deploy": "pnpm build && wrangler deploy --config apps/web/wrangler.jsonc"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.15.0",
+    "@cloudflare/workers-types": "5.20261114.1",
+    "@eslint/js": "^9.39.1",
+    "@playwright/test": "^1.56.1",
+    "@types/node": "^24.10.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "globals": "^16.5.0",
+    "prettier": "^3.6.2",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.47.0",
+    "vitest": "^4.0.13",
+    "wrangler": "^4.50.0"
+  },
+  "type": "module"
+}

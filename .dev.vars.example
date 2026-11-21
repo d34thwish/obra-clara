@@ -1,0 +1,5 @@
+DEMO_MODE=true
+ACCESS_TEAM_DOMAIN=example.cloudflareaccess.com
+ACCESS_AUD=replace-after-access-setup
+TURNSTILE_SECRET_KEY=
+GITHUB_TOKEN=

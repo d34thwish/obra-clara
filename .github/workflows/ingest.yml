@@ -1,0 +1,21 @@
+name: Monthly ingestion (manual until configured)
+on:
+  workflow_dispatch:
+    inputs:
+      promote: { description: Promote validated import, required: true, default: 'false' }
+  # Enable only after source URL and licence review:
+  # schedule: [{cron: '0 10 5 * *'}]
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    permissions: { contents: read }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.28.9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm data:sync
+        env:
+          OECE_DISTRIBUTION_URL: ${{ secrets.OECE_DISTRIBUTION_URL }}

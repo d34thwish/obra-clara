@@ -1,0 +1,9 @@
+name: Feature proposal
+description: Suggest a user-centered improvement
+body:
+  - type: textarea
+    attributes: { label: Problem, description: Who is affected and why? }
+    validations: { required: true }
+  - type: textarea
+    attributes: { label: Proposed behavior }
+    validations: { required: true }
