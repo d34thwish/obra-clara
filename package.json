@@ -17,10 +17,12 @@
     "db:seed": "wrangler d1 execute obra-clara --local --config apps/web/wrangler.jsonc --file fixtures/demo.sql",
     "data:sync": "tsx data-pipeline/scripts/sync.ts",
     "data:validate": "tsx data-pipeline/scripts/validate.ts",
-    "deploy": "pnpm build && wrangler deploy --config apps/web/wrangler.jsonc",
+    "deploy": "node scripts/cloudflare/deploy-production.mjs",
     "test:unit": "vitest run tests/unit",
     "test:api": "vitest run tests/api",
-    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build",
+    "deploy:preflight": "node scripts/cloudflare/preflight.mjs",
+    "deploy:smoke": "node scripts/cloudflare/smoke-test.mjs"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.15.0",
