@@ -12,7 +12,7 @@ Production deployment uses the GitHub Actions environment **production**. Add re
 | `TURNSTILE_HOSTNAME`        | Actions variable |     No | Exact hostname from `PUBLIC_BASE_URL`                |
 | `CLOUDFLARE_API_TOKEN`      | Actions secret   |    Yes | Least-privilege Wrangler authentication              |
 | `TURNSTILE_SECRET_KEY`      | Actions secret   |    Yes | Encrypted Worker secret for Siteverify               |
-| `ACCESS_TEAM_DOMAIN`        | Actions variable |     No | Required Cloudflare Access team domain/issuer         |
+| `ACCESS_TEAM_DOMAIN`        | Actions variable |     No | Required Cloudflare Access team domain/issuer        |
 | `ACCESS_AUD`                | Actions variable |     No | Required Access application audience                 |
 | `MODERATOR_EMAILS`          | Actions variable |     No | Required comma-separated moderator email allowlist   |
 | `CORS_ALLOWED_ORIGINS`      | Actions variable |     No | Optional extra origins; empty keeps same-origin only |
