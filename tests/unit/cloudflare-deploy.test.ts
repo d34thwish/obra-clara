@@ -26,6 +26,9 @@ const env: any = {
   TURNSTILE_HOSTNAME: 'obra.example',
   CLOUDFLARE_API_TOKEN: 'token',
   TURNSTILE_SECRET_KEY: 'secret',
+  ACCESS_TEAM_DOMAIN: 'obra.cloudflareaccess.com',
+  ACCESS_AUD: 'test-access-audience',
+  MODERATOR_EMAILS: 'moderator@example.com',
   DEMO_MODE: 'false',
   ENVIRONMENT: 'production',
   TURNSTILE_ACTION: 'community_submission',
@@ -41,14 +44,38 @@ const source = {
   vars: {},
 };
 
+function productionFetcher(adminResponse: Response) {
+  return async (input: string) => {
+    const path = new URL(input).pathname;
+    if (path === '/api/v1/health') return Response.json({ ok: true, mode: 'production' });
+    if (path === '/api/v1/config')
+      return Response.json({
+        mode: 'production',
+        turnstileRequired: true,
+        turnstileSiteKey: 'site',
+      });
+    if (path === '/api/v1/overview') return Response.json({ meta: { mode: 'production' } });
+    if (path === '/api/openapi.json') return Response.json({ openapi: '3.1.0' });
+    if (path.startsWith('/api/v1/admin')) return adminResponse;
+    return new Response('<div id="root"></div>', { headers: { 'content-type': 'text/html' } });
+  };
+}
+
 describe('production configuration safety', () => {
   it('accepts a complete environment', () => expect(validateEnvironment(env)).toEqual([]));
+  it.each(['ACCESS_TEAM_DOMAIN', 'ACCESS_AUD', 'MODERATOR_EMAILS'])(
+    'requires production Access setting %s',
+    (key) => {
+      expect(validateEnvironment({ ...env, [key]: '' }).join(' ')).toContain(
+        'requires Cloudflare Access moderator configuration',
+      );
+    },
+  );
   it.each([
     [{ ...env, CLOUDFLARE_D1_DATABASE_ID: ZERO_UUID }, 'non-zero UUID'],
     [{ ...env, CLOUDFLARE_R2_BUCKET_NAME: R2_PLACEHOLDER }, 'non-placeholder'],
     [{ ...env, PUBLIC_BASE_URL: 'http://obra.example' }, 'HTTPS'],
     [{ ...env, TURNSTILE_HOSTNAME: 'other.example' }, 'exactly match'],
-    [{ ...env, ACCESS_TEAM_DOMAIN: 'team.cloudflareaccess.com' }, 'all-or-nothing'],
     [{ ...env, TURNSTILE_SECRET_KEY: '' }, 'Missing required TURNSTILE_SECRET_KEY'],
     [{ ...env, TURNSTILE_DEV_BYPASS: 'true' }, 'never be enabled'],
   ])('rejects unsafe values', (candidate, message) =>
@@ -85,24 +112,38 @@ describe('production configuration safety', () => {
 });
 
 describe('smoke tests', () => {
-  it('accepts production responses and protected admin', async () => {
-    const fetcher = async (input: string) => {
-      const path = new URL(input).pathname;
-      if (path === '/api/v1/health') return Response.json({ ok: true, mode: 'production' });
-      if (path === '/api/v1/config')
-        return Response.json({
-          mode: 'production',
-          turnstileRequired: true,
-          turnstileSiteKey: 'site',
-        });
-      if (path === '/api/v1/overview') return Response.json({ meta: { mode: 'production' } });
-      if (path === '/api/openapi.json') return Response.json({ openapi: '3.1.0' });
-      if (path.startsWith('/api/v1/admin')) return new Response('', { status: 401 });
-      return new Response('<div id="root"></div>', { headers: { 'content-type': 'text/html' } });
-    };
-    await expect(smokeTest(env.PUBLIC_BASE_URL, fetcher as any)).resolves.toBeUndefined();
+  it('accepts production responses and a protected 401 admin response', async () => {
+    await expect(
+      smokeTest(env.PUBLIC_BASE_URL, productionFetcher(new Response('', { status: 401 })) as any),
+    ).resolves.toBeUndefined();
   });
-  it('fails on demo mode or public admin', async () => {
+
+  it('accepts a genuine Cloudflare Access login redirect', async () => {
+    const response = new Response(null, {
+      status: 302,
+      headers: {
+        location:
+          'https://obra-team.cloudflareaccess.com/cdn-cgi/access/login/test-audience?redirect_url=%2Fadmin',
+      },
+    });
+    await expect(smokeTest(env.PUBLIC_BASE_URL, productionFetcher(response) as any)).resolves.toBeUndefined();
+  });
+
+  it.each([
+    [200, undefined],
+    [301, 'https://attacker.example/login'],
+    [302, '/unrelated-login'],
+    [404, undefined],
+    [500, undefined],
+  ])('rejects unprotected or unexpected admin response HTTP %s', async (status, location) => {
+    const headers = location ? { location } : undefined;
+    const response = new Response(null, { status, headers });
+    await expect(
+      smokeTest(env.PUBLIC_BASE_URL, productionFetcher(response) as any),
+    ).rejects.toThrow('unexpected HTTP');
+  });
+
+  it('fails on demo mode or a public admin response', async () => {
     const fetcher = async (input: string) => {
       const path = new URL(input).pathname;
       if (path === '/api/v1/health') return Response.json({ ok: true, mode: 'demo' });
