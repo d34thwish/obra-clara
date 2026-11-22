@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { ModuleRegistry } from '../packages/core/src';
-import { dataQualityModule } from '../packages/modules/src';
+import { ModuleRegistry } from '../../packages/core/src';
+import { dataQualityModule } from '../../packages/modules/src';
 describe('modules', () => {
   it('registers trusted build-time modules', () => {
     const r = new ModuleRegistry();

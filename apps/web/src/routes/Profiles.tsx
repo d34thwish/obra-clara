@@ -1,153 +1,204 @@
 import { Link, useParams } from 'react-router-dom';
-import { Page, DemoNotice, Money, Empty } from '../components/Common';
-import { institutions, suppliers, procurements, trends } from '../data/demo';
-export function Institution() {
-  const { id } = useParams();
-  const x = institutions.find((i) => i.id === id);
-  if (!x)
-    return (
-      <Page
-        title="Institución no encontrada"
-        description="No existe un registro con ese identificador."
-      >
-        <Empty text="Comprueba el enlace o vuelve al explorador." />
-      </Page>
-    );
-  const rows = procurements.filter((p) => p.institutionId === id);
+import { Empty, Failure, Loading, Money, Page } from '../components/Common';
+import { institutionsApi, procurementsApi, suppliersApi, type Procurement } from '../lib/api';
+import { useApi } from '../lib/useApi';
+function Records({ rows = [] }: { rows?: Procurement[] }) {
   return (
-    <Page title={x.name} description={`${x.code} · ${x.location}`}>
-      <DemoNotice />
-      <div className="grid">
-        <div className="card metric">
-          <span>Monto adjudicado</span>
-          <strong>
-            <Money value={x.amount} />
-          </strong>
-        </div>
-        <div className="card metric">
-          <span>Procedimientos</span>
-          <strong>{x.records}</strong>
-        </div>
-        <div className="card metric">
-          <span>Proveedores</span>
-          <strong>{x.suppliers}</strong>
-        </div>
-        <div className="card">
-          <span>Fuente</span>
-          <strong>Fixture local sintético</strong>
-        </div>
-      </div>
-      <h2>Actividad histórica</h2>
-      <div className="chart" aria-label="Tabla visual de actividad histórica">
-        {trends.map((t) => (
-          <div key={t.year} className="bar" style={{ height: `${t.amount * 35}px` }}>
-            {t.year}
-            <br />
-            {t.amount}M
-          </div>
-        ))}
-      </div>
-      <RecordLinks rows={rows} />
-    </Page>
+    <>
+      <h2>Registros relacionados</h2>
+      {rows.length ? (
+        rows.map((x) => (
+          <p key={x.id}>
+            <Link to={'/contrataciones/' + x.id}>{x.identifier}</Link> ·{' '}
+            {x.description || 'Sin descripción'}
+          </p>
+        ))
+      ) : (
+        <Empty text="No hay registros publicados relacionados." />
+      )}
+    </>
   );
 }
-export function Supplier() {
-  const { id } = useParams();
-  const x = suppliers.find((s) => s.id === id);
-  if (!x)
+export function Institution() {
+  const { id = '' } = useParams();
+  const r = useApi((s) => institutionsApi.get(id, s), [id]);
+  if (r.loading)
     return (
-      <Page title="Proveedor no encontrado" description="Registro inexistente">
-        <Empty text="Busca otro proveedor." />
+      <Page title="Institución" description="Consultando perfil">
+        <Loading />
       </Page>
     );
+  if (r.error)
+    return (
+      <Page title="Institución" description="No disponible">
+        <Failure error={r.error} retry={r.retry} />
+      </Page>
+    );
+  const x = r.data!.data;
   return (
-    <Page title={x.name} description={`RUC ${x.ruc}`}>
-      <DemoNotice />
-      <div className="danger-note">
-        <b>Cómo interpretar este perfil:</b> adjudicaciones repetidas o montos altos no prueban
-        corrupción, pago ni entrega conforme.
-      </div>
+    <Page title={x.name} description={`${x.code} · ${x.location || 'Ubicación no disponible'}`}>
       <div className="grid">
         <div className="card metric">
-          <span>Monto adjudicado</span>
+          <span>Monto adjudicado comparable</span>
           <strong>
-            <Money value={x.amount} />
+            <Money minor={x.amountMinor} currency={x.currency} />
           </strong>
         </div>
         <div className="card metric">
           <span>Registros</span>
           <strong>{x.records}</strong>
         </div>
+        <div className="card metric">
+          <span>Proveedores</span>
+          <strong>{x.suppliers}</strong>
+        </div>
       </div>
-      <RecordLinks rows={procurements.filter((p) => p.supplierId === id)} />
+      <h2>Actividad histórica</h2>
+      {x.trends?.length ? (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Periodo</th>
+                <th>Moneda</th>
+                <th>Monto adjudicado</th>
+              </tr>
+            </thead>
+            <tbody>
+              {x.trends.map((t, i) => (
+                <tr key={i}>
+                  <td>{t.period}</td>
+                  <td>{t.currency}</td>
+                  <td>
+                    <Money minor={t.amountMinor} currency={t.currency} />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : (
+        <Empty text="No existe una serie histórica comparable." />
+      )}
+      <Records rows={x.related} />
+    </Page>
+  );
+}
+export function Supplier() {
+  const { id = '' } = useParams();
+  const r = useApi((s) => suppliersApi.get(id, s), [id]);
+  if (r.loading)
+    return (
+      <Page title="Proveedor" description="Consultando perfil">
+        <Loading />
+      </Page>
+    );
+  if (r.error)
+    return (
+      <Page title="Proveedor" description="No disponible">
+        <Failure error={r.error} retry={r.retry} />
+      </Page>
+    );
+  const x = r.data!.data;
+  return (
+    <Page title={x.name} description={`RUC ${x.ruc || 'no disponible'}`}>
+      <div className="danger-note">
+        Los montos o adjudicaciones repetidas no prueban corrupción, pago ni entrega conforme.
+      </div>
+      <div className="grid">
+        <div className="card metric">
+          <span>Monto adjudicado comparable</span>
+          <strong>
+            <Money minor={x.amountMinor} currency={x.currency} />
+          </strong>
+        </div>
+        <div className="card metric">
+          <span>Registros</span>
+          <strong>{x.records}</strong>
+        </div>
+        <div className="card metric">
+          <span>Instituciones</span>
+          <strong>{x.institutions}</strong>
+        </div>
+      </div>
+      <Records rows={x.related} />
     </Page>
   );
 }
 export function Procurement() {
-  const { id } = useParams();
-  const x = procurements.find((p) => p.id === id);
-  if (!x)
+  const { id = '' } = useParams();
+  const r = useApi((s) => procurementsApi.get(id, s), [id]);
+  if (r.loading)
     return (
-      <Page title="Contratación no encontrada" description="Registro inexistente">
-        <Empty text="Vuelve a Contrataciones." />
+      <Page title="Contratación" description="Consultando registro">
+        <Loading />
       </Page>
     );
-  const inst = institutions.find((i) => i.id === x.institutionId),
-    sup = suppliers.find((s) => s.id === x.supplierId);
+  if (r.error)
+    return (
+      <Page title="Contratación" description="No disponible">
+        <Failure error={r.error} retry={r.retry} />
+      </Page>
+    );
+  const x = r.data!.data;
   return (
-    <Page title={x.identifier} description={x.description}>
-      <DemoNotice />
+    <Page title={x.identifier} description={x.description || 'Sin descripción'}>
+      <div className="danger-note">
+        <b>Etapa registrada:</b> {x.stage}. La adjudicación, el contrato y el pago son hechos
+        distintos.
+      </div>
       <div className="grid">
-        <div className="card">
-          <b>Monto adjudicado</b>
-          <p>
-            <Money value={x.amount} /> ({x.currency})
-          </p>
-        </div>
-        <div className="card">
-          <b>Procedimiento</b>
-          <p>{x.procedure}</p>
-        </div>
-        <div className="card">
-          <b>Fecha</b>
-          <p>{x.date}</p>
-        </div>
-        <div className="card">
-          <b>Estado registrado</b>
-          <p>{x.status}</p>
-        </div>
+        <Metric n="Estimado" v={x.estimatedAmountMinor} c={x.currency} />
+        <Metric n="Adjudicado" v={x.awardAmountMinor} c={x.currency} />
+        <Metric n="Contratado" v={x.contractAmountMinor} c={x.currency} />
+        <Metric n="Pagado" v={x.paidAmountMinor} c={x.currency} />
       </div>
       <h2>Relaciones</h2>
       <p>
-        Institución: <Link to={'/instituciones/' + inst?.id}>{inst?.name}</Link>
+        Institución:{' '}
+        {x.institution ? (
+          <Link to={'/instituciones/' + x.institution.id}>{x.institution.name}</Link>
+        ) : (
+          'No disponible'
+        )}
       </p>
       <p>
-        Proveedor: <Link to={'/proveedores/' + sup?.id}>{sup?.name}</Link>
+        Proveedor:{' '}
+        {x.supplier ? (
+          <Link to={'/proveedores/' + x.supplier.id}>{x.supplier.name}</Link>
+        ) : (
+          'No disponible'
+        )}
       </p>
-      <h2>Evidencia</h2>
-      <p>
-        Este fixture enlaza al portal institucional solo como referencia. No afirma que exista un
-        registro oficial equivalente.
-      </p>
-      <a className="btn" href={x.sourceUrl} target="_blank" rel="noreferrer">
-        Abrir portal oficial de referencia
-      </a>
+      <h2>Procedencia</h2>
+      {x.provenance?.length ? (
+        x.provenance.map((p, i) => (
+          <div className="card" key={i}>
+            <p>Registro fuente: {p.sourceRecordId}</p>
+            <p>
+              Archivo: {p.originalFilename || 'No disponible'} · Recuperado:{' '}
+              {p.retrievedAt || 'No disponible'}
+            </p>
+            {p.sourceUrl && (
+              <a href={p.sourceUrl} target="_blank" rel="noreferrer">
+                Abrir fuente oficial
+              </a>
+            )}
+          </div>
+        ))
+      ) : (
+        <Empty text="La procedencia detallada no está disponible." />
+      )}
     </Page>
   );
 }
-function RecordLinks({ rows }: { rows: typeof procurements }) {
+function Metric({ n, v, c }: { n: string; v?: number | null; c?: string | null }) {
   return (
-    <>
-      <h2>Contrataciones relacionadas</h2>
-      {rows.length ? (
-        rows.map((r) => (
-          <p key={r.id}>
-            <Link to={'/contrataciones/' + r.id}>{r.identifier}</Link> · {r.description}
-          </p>
-        ))
-      ) : (
-        <Empty text="No hay registros relacionados en este conjunto." />
-      )}
-    </>
+    <div className="card">
+      <b>{n}</b>
+      <p>
+        <Money minor={v} currency={c} />
+      </p>
+    </div>
   );
 }

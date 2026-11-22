@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { supplierConcentration } from '../packages/analytics/src';
+import { supplierConcentration } from '../../packages/analytics/src';
 describe('supplier concentration', () => {
   it('uses comparable total', () => {
     const r = supplierConcentration([

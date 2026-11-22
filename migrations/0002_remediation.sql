@@ -1,0 +1,10 @@
+ALTER TABLE import_batches ADD COLUMN promoted_at TEXT;
+ALTER TABLE import_batches ADD COLUMN archived_object_key TEXT;
+ALTER TABLE import_batches ADD COLUMN report_json TEXT NOT NULL DEFAULT '{}';
+ALTER TABLE procurement_records ADD COLUMN publication_status TEXT NOT NULL DEFAULT 'staging' CHECK(publication_status IN('staging','published','superseded'));
+ALTER TABLE procurement_records ADD COLUMN original_amount_text TEXT;
+ALTER TABLE community_submissions ADD COLUMN details_json TEXT NOT NULL DEFAULT '{}';
+CREATE INDEX idx_proc_public_date ON procurement_records(publication_status,award_date);
+CREATE INDEX idx_proc_public_inst ON procurement_records(publication_status,institution_id);
+CREATE INDEX idx_proc_public_sup ON procurement_records(publication_status,supplier_id);
+CREATE INDEX idx_batches_dataset_status ON import_batches(dataset_id,status,retrieved_at);

@@ -1,37 +1,36 @@
-# Obra Clara
+# Obra Clara 0.2.0
 
-**El dinero público es de todos. Su destino también debería ser transparente.**
+Obra Clara es una plataforma cívica independiente, comunitaria y de código abierto para explorar contratación pública peruana con procedencia y contexto. **No es una autoridad gubernamental.** Las señales estadísticas no son acusaciones ni prueba de corrupción.
 
-Obra Clara es una plataforma cívica independiente, comunitaria y de código abierto para explorar contratación pública peruana con procedencia, contexto y metodologías reproducibles. No es una autoridad gubernamental. Las señales son estadísticas, no acusaciones.
+## Implementado
 
-## Estado de esta distribución
+- React/Vite conectado a una API Hono del mismo origen para inicio, búsqueda, instituciones, proveedores, contrataciones, datasets, señales, comparación y comunidad.
+- Dos modos estrictos: demo sintética visible (`DEMO_MODE=true`) y producción D1 sin fallback ficticio (`false`).
+- D1 con etapas separadas, publicación controlada, procedencia, FTS5, submissions, eventos de moderación y auditoría.
+- Formulario comunitario con campos condicionales, Turnstile cliente/servidor, ID del servidor y persistencia D1.
+- Moderación autenticada por Cloudflare Access JWT y autorizada por `MODERATOR_EMAILS`.
+- Rate Limiting bindings aproximados por ubicación, con límites distintos para lectura y submissions.
+- Pipeline dry-run con CSV/XLSX robusto, validación, deduplicación y reporte; ruta de promoción D1/R2 implementada y bloqueada sin aprobación de licencia.
 
-- Aplicación React + API Hono en un Worker con Static Assets.
-- D1 normalizado, R2 preparado para archivos originales y migraciones versionadas.
-- Demo sintética claramente marcada; producción vacía muestra estados honestos.
-- Adaptador OECE basado en el catálogo oficial, configurable con una URL de distribución real. No se afirma una importación oficial dentro del ZIP.
-- Búsqueda, perfiles, contratación, señales, comparación, datos abiertos, comunidad y moderación protegida.
+## Fuente OECE
 
-## Inicio local
+El adaptador verificado corresponde a **Datos de la Convocatoria o Invitación de las entidades**. Se clasifica como `process`, no como adjudicación. El catálogo indica procedimientos adjudicados desde 2018, pero su licencia aparece como **License Not Specified**. Por ello, esta versión bloquea promoción y redistribución hasta que una revisión jurídica configure un adaptador con `derivativesPermitted` y `archivePermitted` verdaderos. No se incluye ni se afirma una importación oficial.
 
-1. Node 24 y pnpm 11.
+## Desarrollo
+
+1. Node 24 y pnpm 11.28.9.
 2. `pnpm install --frozen-lockfile`
-3. `cp .dev.vars.example .dev.vars` y use `DEMO_MODE=true`.
+3. `cp .dev.vars.example .dev.vars`
 4. `pnpm db:migrate && pnpm db:seed`
 5. `pnpm dev`
 
-## Calidad
+Calidad: `pnpm verify`. E2E: `pnpm exec playwright install --with-deps chromium && pnpm test:e2e`.
 
-`pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build`
+## Ingesta
 
-## Datos
+- Dry run: defina `OECE_DISTRIBUTION_URL` y ejecute `pnpm data:sync`.
+- Promoción: `pnpm data:sync -- --promote`. Falla de forma explícita sin licencia aprobada y credenciales Cloudflare.
+- Los reportes se escriben en `import-reports/`, directorio ignorado por Git.
+- La promoción mantiene staging separado, cambia visibilidad solo tras validar, actualiza FTS y conserva lineage.
 
-Configure `OECE_DISTRIBUTION_URL` solo después de verificar la distribución y licencia; ejecute `pnpm data:sync`. Los originales deben archivarse en R2 con SHA-256 y nunca sobrescribirse.
-
-## Módulos
-
-Los módulos son TypeScript, se registran en build, declaran dependencias/capacidades/rutas y nunca ejecutan JavaScript comunitario arbitrario. Consulte `docs/development/MODULES.md`.
-
-## Licencia
-
-Código: AGPL-3.0-or-later. Datos: licencias de sus fuentes, documentadas por separado. Contribuciones usan DCO (`Signed-off-by`).
+Consulte `docs/deployment/CLOUDFLARE_SETUP.md`, `docs/data-sources/OECE.md` y `DATA_LICENSES.md`.

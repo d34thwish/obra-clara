@@ -1,18 +1,18 @@
-# Verification report
+# Verification report — 0.2.0
 
-Date: 2026-11-21
+Verified locally on 2026-11-21:
 
-Passed:
-- Dependency resolution and frozen pnpm lockfile.
-- Prettier formatting check.
-- ESLint.
-- TypeScript checks for all workspaces.
-- Vitest: 3 files, 5 tests.
-- Cloudflare Vite production build (Worker and client assets).
-- Local D1 migration: 23 statements.
-- Local demo seed.
-- Secret-pattern scan.
+- `pnpm install --frozen-lockfile`: passed.
+- Prettier, ESLint and TypeScript: passed.
+- Vitest: 8 files, 28 tests passed (parser, XLSX, finance/date normalization, schemas, modules, analytics, Turnstile, API demo/empty validation, migration and dry-run pipeline).
+- Cloudflare Vite production build: passed.
+- D1 migrations 0001 + 0002: passed locally (34 statements total).
+- Demo seed: passed; synthetic records remain `staging` and production APIs select only `published`.
+- Secret-pattern scan: passed.
 
-Not executed in this build environment:
-- Playwright browser journeys. Chromium download was blocked by sandbox policy (HTTP 403). Test specifications and CI command are included.
-- Remote Cloudflare deployment and official OECE data import, both intentionally require owner configuration and a verified distribution URL/license.
+Not executed:
+
+- Playwright: Chromium dependency installation was blocked by no-new-privileges and browser download was blocked by sandbox HTTP 403. CI installs Chromium with `--with-deps` and runs the retained journeys.
+- `pnpm audit`: audit service was blocked by sandbox HTTP 403; CI runs the audit.
+- Official OECE import/promotion: not performed. The verified catalog says License Not Specified, and promotion intentionally fails closed.
+- Cloudflare deployment: not performed.

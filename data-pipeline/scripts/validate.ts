@@ -1,19 +1,15 @@
 import { readFile } from 'node:fs/promises';
+import { basename } from 'node:path';
 import { oeceProceduresAdapter as adapter } from '../adapters/oece-procedures';
-const f = process.argv[2];
-if (!f) throw new Error('Usage: pnpm data:validate <csv-file>');
-const bytes = new Uint8Array(await readFile(f));
-let ok = 0;
-const errors: string[] = [];
-for await (const row of adapter.parse(bytes)) {
-  try {
-    adapter.normalize(row, ok + errors.length + 1);
-    ok++;
-  } catch (e) {
-    errors.push(String(e));
-  }
-}
-console.log(
-  JSON.stringify({ ok, errors: errors.slice(0, 100), errorCount: errors.length }, null, 2),
-);
-if (errors.length) process.exitCode = 1;
+import { runPipeline } from '../pipeline';
+const file = process.argv[2];
+if (!file) throw new Error('Usage: pnpm data:validate <csv-or-xlsx>');
+const { report } = await runPipeline(adapter, {
+  bytes: new Uint8Array(await readFile(file)),
+  filename: basename(file),
+  sourceUrl: `file://${file}`,
+  promote: false,
+  outputDir: 'import-reports',
+});
+console.log(JSON.stringify(report, null, 2));
+if (report.invalidCount) process.exitCode = 2;

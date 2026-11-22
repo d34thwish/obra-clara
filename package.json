@@ -1,7 +1,7 @@
 {
   "name": "obra-clara",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
   "packageManager": "pnpm@11.28.9",
   "scripts": {
     "dev": "pnpm --filter @obra-clara/web dev",
@@ -17,7 +17,10 @@
     "db:seed": "wrangler d1 execute obra-clara --local --config apps/web/wrangler.jsonc --file fixtures/demo.sql",
     "data:sync": "tsx data-pipeline/scripts/sync.ts",
     "data:validate": "tsx data-pipeline/scripts/validate.ts",
-    "deploy": "pnpm build && wrangler deploy --config apps/web/wrangler.jsonc"
+    "deploy": "pnpm build && wrangler deploy --config apps/web/wrangler.jsonc",
+    "test:unit": "vitest run tests/unit",
+    "test:api": "vitest run tests/api",
+    "verify": "pnpm format:check && pnpm lint && pnpm typecheck && pnpm test && pnpm build"
   },
   "devDependencies": {
     "@cloudflare/vite-plugin": "^1.15.0",
@@ -33,7 +36,11 @@
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.47.0",
     "vitest": "^4.0.13",
-    "wrangler": "^4.50.0"
+    "wrangler": "^4.50.0",
+    "papaparse": "^5.5.3",
+    "exceljs": "^4.4.0",
+    "aws4fetch": "^1.0.20",
+    "@types/papaparse": "^5.3.16"
   },
   "type": "module"
 }

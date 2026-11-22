@@ -1,14 +1,16 @@
-name: Monthly ingestion (manual until configured)
+name: Manual data ingestion
 on:
   workflow_dispatch:
     inputs:
-      promote: { description: Promote validated import, required: true, default: 'false' }
-  # Enable only after source URL and licence review:
-  # schedule: [{cron: '0 10 5 * *'}]
+      promote:
+        description: Promote a reviewed import
+        type: boolean
+        required: true
+        default: false
 jobs:
-  validate:
+  dry-run:
+    if: ${{ !inputs.promote }}
     runs-on: ubuntu-latest
-    permissions: { contents: read }
     steps:
       - uses: actions/checkout@v4
       - uses: pnpm/action-setup@v4
@@ -19,3 +21,33 @@ jobs:
       - run: pnpm data:sync
         env:
           OECE_DISTRIBUTION_URL: ${{ secrets.OECE_DISTRIBUTION_URL }}
+          IMPORT_REPORT_DIR: import-reports
+      - uses: actions/upload-artifact@v4
+        with: { name: ingestion-validation-report, path: import-reports/*.json }
+  promote:
+    if: ${{ inputs.promote }}
+    environment: production-data-promotion
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with: { version: 11.28.9 }
+      - uses: actions/setup-node@v4
+        with: { node-version: 24, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: test "$LICENSE_APPROVED" = true
+        env: { LICENSE_APPROVED: '${{ vars.LICENSE_APPROVED }}' }
+      - run: pnpm data:sync -- --promote
+        env:
+          OECE_DISTRIBUTION_URL: ${{ secrets.OECE_DISTRIBUTION_URL }}
+          LICENSE_APPROVED: ${{ vars.LICENSE_APPROVED }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          D1_DATABASE_ID: ${{ secrets.D1_DATABASE_ID }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          IMPORT_REPORT_DIR: import-reports
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: ingestion-promotion-report, path: import-reports/*.json }
