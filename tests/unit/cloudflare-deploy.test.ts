@@ -114,7 +114,10 @@ describe('production configuration safety', () => {
 describe('smoke tests', () => {
   it('accepts production responses and a protected 401 admin response', async () => {
     await expect(
-      smokeTest(env.PUBLIC_BASE_URL, productionFetcher(new Response('', { status: 401 })) as any),
+      smokeTest(
+        env.PUBLIC_BASE_URL,
+        productionFetcher(new Response('', { status: 401 })) as any,
+      ),
     ).resolves.toBeUndefined();
   });
 
@@ -122,11 +125,15 @@ describe('smoke tests', () => {
     const response = new Response(null, {
       status: 302,
       headers: {
-        location:
-          'https://obra-team.cloudflareaccess.com/cdn-cgi/access/login/test-audience?redirect_url=%2Fadmin',
+        location: new URL(
+          '/cdn-cgi/access/login/test-audience?redirect_url=%2Fadmin',
+          'https://obra-team.cloudflareaccess.com',
+        ).href,
       },
     });
-    await expect(smokeTest(env.PUBLIC_BASE_URL, productionFetcher(response) as any)).resolves.toBeUndefined();
+    await expect(
+      smokeTest(env.PUBLIC_BASE_URL, productionFetcher(response) as any),
+    ).resolves.toBeUndefined();
   });
 
   it.each([
@@ -135,13 +142,16 @@ describe('smoke tests', () => {
     [302, '/unrelated-login'],
     [404, undefined],
     [500, undefined],
-  ])('rejects unprotected or unexpected admin response HTTP %s', async (status, location) => {
-    const headers = location ? { location } : undefined;
-    const response = new Response(null, { status, headers });
-    await expect(
-      smokeTest(env.PUBLIC_BASE_URL, productionFetcher(response) as any),
-    ).rejects.toThrow('unexpected HTTP');
-  });
+  ])(
+    'rejects unprotected or unexpected admin response HTTP %s',
+    async (status, location) => {
+      const headers = location ? { location } : undefined;
+      const response = new Response(null, { status, headers });
+      await expect(
+        smokeTest(env.PUBLIC_BASE_URL, productionFetcher(response) as any),
+      ).rejects.toThrow('unexpected HTTP');
+    },
+  );
 
   it('fails on demo mode or a public admin response', async () => {
     const fetcher = async (input: string) => {
