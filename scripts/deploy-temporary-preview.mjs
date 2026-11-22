@@ -83,7 +83,7 @@ try {
     'wrangler',
     'deploy',
     '--config',
-    'apps/web/wrangler.jsonc',
+    'apps/web/dist/worker/wrangler.json',
     '--temporary',
     '--message',
     'Obra Clara isolated demo preview',
