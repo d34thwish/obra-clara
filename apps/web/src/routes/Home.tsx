@@ -1,13 +1,12 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { DemoNotice, Failure, Loading, Money } from '../components/Common';
+import { Failure, Loading, Money } from '../components/Common';
 import { modeApi } from '../lib/api';
 import { useApi } from '../lib/useApi';
 export function Home() {
   const [q, setQ] = useState(''),
     nav = useNavigate();
-  const cfg = useApi((s) => modeApi.get(s), []),
-    stats = useApi((s) => modeApi.overview(s), []);
+  const stats = useApi((s) => modeApi.overview(s), []);
   return (
     <>
       <section className="hero">
@@ -33,7 +32,6 @@ export function Home() {
         </div>
       </section>
       <div className="container">
-        {cfg.data?.mode === 'demo' && <DemoNotice />}
         {stats.loading ? (
           <Loading />
         ) : stats.error ? (
