@@ -19,6 +19,31 @@ const spaRoutes = new Set([
   '/comunidad',
   '/datos',
 ]);
+const accessRedirectStatuses = new Set([301, 302, 303, 307, 308]);
+
+export function isProtectedAdminResponse(response, baseUrl) {
+  if (response.status === 401 || response.status === 403) return true;
+  if (!accessRedirectStatuses.has(response.status)) return false;
+
+  const location = response.headers.get('location');
+  if (!location) return false;
+
+  try {
+    const base = new URL(baseUrl);
+    const redirect = new URL(location, baseUrl);
+    if (redirect.protocol !== 'https:') return false;
+
+    const isSameHostAccessLogin =
+      redirect.hostname === base.hostname && redirect.pathname.startsWith('/cdn-cgi/access/login/');
+    const isCloudflareAccessLogin =
+      redirect.hostname.endsWith('.cloudflareaccess.com') &&
+      redirect.pathname.startsWith('/cdn-cgi/access/login/');
+
+    return isSameHostAccessLogin || isCloudflareAccessLogin;
+  } catch {
+    return false;
+  }
+}
 
 export async function smokeTest(baseUrl = process.env.PUBLIC_BASE_URL, fetcher = fetch) {
   if (!baseUrl) throw new Error('PUBLIC_BASE_URL is required for smoke tests.');
@@ -61,12 +86,20 @@ export async function smokeTest(baseUrl = process.env.PUBLIC_BASE_URL, fetcher =
         failures.push(`${path}: production mode not reported.`);
     }
   }
-  const admin = await fetcher(`${baseUrl}/api/v1/admin/submissions`, {
-    redirect: 'manual',
-    signal: AbortSignal.timeout(15000),
-  });
-  if (admin.status >= 200 && admin.status < 300)
-    failures.push('/api/v1/admin/submissions: unauthenticated request unexpectedly succeeded.');
+  let admin;
+  try {
+    admin = await fetcher(`${baseUrl}/api/v1/admin/submissions`, {
+      redirect: 'manual',
+      signal: AbortSignal.timeout(15000),
+    });
+  } catch (error) {
+    failures.push(`/api/v1/admin/submissions: network error ${error.message}`);
+  }
+  if (admin && !isProtectedAdminResponse(admin, baseUrl)) {
+    failures.push(
+      `/api/v1/admin/submissions: unexpected HTTP ${admin.status}; expected 401, 403, or a Cloudflare Access login redirect.`,
+    );
+  }
   if (failures.length)
     throw new Error(`Production smoke tests failed:\n- ${failures.join('\n- ')}`);
   console.log(
