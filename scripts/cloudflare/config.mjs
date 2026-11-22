@@ -60,12 +60,15 @@ export function validateEnvironment(env = process.env) {
   }
   if (publicUrl && env.TURNSTILE_HOSTNAME && publicUrl.hostname !== env.TURNSTILE_HOSTNAME)
     errors.push('TURNSTILE_HOSTNAME must exactly match PUBLIC_BASE_URL hostname.');
-  const access = ['ACCESS_TEAM_DOMAIN', 'ACCESS_AUD', 'MODERATOR_EMAILS'];
-  const supplied = access.filter((k) => env[k]?.trim()).length;
-  if (supplied > 0 && supplied < access.length)
+
+  const accessKeys = ['ACCESS_TEAM_DOMAIN', 'ACCESS_AUD', 'MODERATOR_EMAILS'];
+  const missingAccessKeys = accessKeys.filter((key) => !env[key]?.trim());
+  if (missingAccessKeys.length) {
     errors.push(
-      'Access configuration is all-or-nothing: set ACCESS_TEAM_DOMAIN, ACCESS_AUD, and MODERATOR_EMAILS together.',
+      `Production deployment requires Cloudflare Access moderator configuration: ${missingAccessKeys.join(', ')}.`,
     );
+  }
+
   if (env.DEMO_MODE && env.DEMO_MODE !== 'false')
     errors.push('Production deployment requires DEMO_MODE=false.');
   if (env.ENVIRONMENT && env.ENVIRONMENT !== 'production')
