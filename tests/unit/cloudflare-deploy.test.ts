@@ -114,10 +114,7 @@ describe('production configuration safety', () => {
 describe('smoke tests', () => {
   it('accepts production responses and a protected 401 admin response', async () => {
     await expect(
-      smokeTest(
-        env.PUBLIC_BASE_URL,
-        productionFetcher(new Response('', { status: 401 })) as any,
-      ),
+      smokeTest(env.PUBLIC_BASE_URL, productionFetcher(new Response('', { status: 401 })) as any),
     ).resolves.toBeUndefined();
   });
 
@@ -142,9 +139,7 @@ describe('smoke tests', () => {
     [302, '/unrelated-login'],
     [404, undefined],
     [500, undefined],
-  ])(
-    'rejects unprotected or unexpected admin response HTTP %s',
-    async (status, location) => {
+  ])('rejects unprotected or unexpected admin response HTTP %s', async (status, location) => {
       const headers = location ? { location } : undefined;
       const response = new Response(null, { status, headers });
       await expect(
