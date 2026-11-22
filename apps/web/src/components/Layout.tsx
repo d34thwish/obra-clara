@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { Link, NavLink, Outlet } from 'react-router-dom';
 import { es } from '../i18n/es';
+import { DemoNotice } from './Common';
+import { modeApi } from '../lib/api';
+import { useApi } from '../lib/useApi';
 export function Layout() {
   const [open, setOpen] = useState(false);
+  const cfg = useApi((signal) => modeApi.get(signal), []);
   const links = [
     ['/', es.nav.home],
     ['/explorar', es.nav.explore],
@@ -37,6 +41,7 @@ export function Layout() {
         </div>
       </header>
       <main id="contenido">
+        {cfg.data?.mode === 'demo' && <DemoNotice />}
         <Outlet />
       </main>
       <footer className="footer">

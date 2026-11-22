@@ -1,0 +1,66 @@
+import { spawn } from 'node:child_process';
+import { readFile, rm, writeFile } from 'node:fs/promises';
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+const root = resolve(fileURLToPath(new URL('..', import.meta.url)));
+const varsPath = resolve(root, 'apps/web/.dev.vars');
+const testVars = [
+  'DEMO_MODE=true',
+  'ENVIRONMENT=development',
+  'TURNSTILE_DEV_BYPASS=true',
+  '',
+].join('\n');
+
+function runPnpm(args) {
+  return new Promise((resolveRun, rejectRun) => {
+    const child = spawn(process.platform === 'win32' ? 'pnpm.cmd' : 'pnpm', args, {
+      cwd: root,
+      env: process.env,
+      shell: process.platform === 'win32',
+      stdio: 'inherit',
+    });
+
+    child.once('error', rejectRun);
+    child.once('close', (code, signal) => {
+      if (code === 0) {
+        resolveRun();
+      } else {
+        rejectRun(
+          new Error(
+            `pnpm ${args.join(' ')} exited with ${signal ? `signal ${signal}` : `code ${code}`}.`,
+          ),
+        );
+      }
+    });
+  });
+}
+
+async function main() {
+  let previousVars;
+  try {
+    previousVars = await readFile(varsPath);
+  } catch (error) {
+    if (error.code !== 'ENOENT') throw error;
+  }
+
+  try {
+    await writeFile(varsPath, testVars, { mode: 0o600 });
+    // Keep the isolated bindings available while the preview Worker starts and
+    // serves the browser tests. Restore developer-local vars even if either
+    // the build or Playwright fails.
+    await runPnpm(['build']);
+    await runPnpm(['exec', 'playwright', 'test']);
+  } finally {
+    if (previousVars) {
+      await writeFile(varsPath, previousVars);
+    } else {
+      await rm(varsPath, { force: true });
+    }
+  }
+}
+
+main().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});
