@@ -46,10 +46,11 @@ async function main() {
 
   try {
     await writeFile(varsPath, testVars, { mode: 0o600 });
-    // The Cloudflare Vite plugin bakes local Worker vars into the preview build.
-    // Keep this demo-only configuration out of production builds and restore any
-    // developer-local vars immediately after the E2E build has finished.
+    // Keep the isolated bindings available while the preview Worker starts and
+    // serves the browser tests. Restore developer-local vars even if either
+    // the build or Playwright fails.
     await runPnpm(['build']);
+    await runPnpm(['exec', 'playwright', 'test']);
   } finally {
     if (previousVars) {
       await writeFile(varsPath, previousVars);
@@ -57,8 +58,6 @@ async function main() {
       await rm(varsPath, { force: true });
     }
   }
-
-  await runPnpm(['exec', 'playwright', 'test']);
 }
 
 main().catch((error) => {
