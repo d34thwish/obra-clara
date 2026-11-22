@@ -10,3 +10,6 @@ test-results/
 .DS_Store
 
 import-reports/
+
+deployment-diagnostics/
+.env.production.local
