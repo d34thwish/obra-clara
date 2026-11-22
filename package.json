@@ -12,7 +12,7 @@
     "typecheck": "pnpm -r typecheck",
     "test": "vitest run",
     "test:integration": "vitest run tests/integration",
-    "test:e2e": "playwright test",
+    "test:e2e": "node scripts/test-e2e.mjs",
     "db:migrate": "wrangler d1 migrations apply obra-clara --local --config apps/web/wrangler.jsonc",
     "db:seed": "wrangler d1 execute obra-clara --local --config apps/web/wrangler.jsonc --file fixtures/demo.sql",
     "data:sync": "tsx data-pipeline/scripts/sync.ts",
